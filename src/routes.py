@@ -22,9 +22,10 @@ class MovieRoute:
 
 
 class RouteTable:
-    def __init__(self, routes: list, fallback_webhook_url: str = ""):
+    def __init__(self, routes: list, fallback_webhook_url: str = "", alert_webhook_url: str = ""):
         self._routes = routes
         self.fallback_webhook_url = fallback_webhook_url
+        self.alert_webhook_url = alert_webhook_url
 
     @property
     def routes(self) -> list:
@@ -48,4 +49,8 @@ class RouteTable:
             )
             for r in data.get("routes", [])
         ]
-        return cls(routes, fallback_webhook_url=data.get("fallback_webhook_url", ""))
+        return cls(
+            routes,
+            fallback_webhook_url=data.get("fallback_webhook_url", ""),
+            alert_webhook_url=data.get("alert_webhook_url", ""),
+        )

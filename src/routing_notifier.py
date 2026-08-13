@@ -29,6 +29,11 @@ class RoutingNotifier(Notifier):
             if table.fallback_webhook_url
             else None
         )
+        self._alert: Optional[DiscordWebhookNotifier] = (
+            DiscordWebhookNotifier(table.alert_webhook_url, booking_url)
+            if table.alert_webhook_url
+            else None
+        )
 
     def notify_openings(self, screenings: list) -> None:
         by_route: dict = defaultdict(list)
@@ -56,7 +61,7 @@ class RoutingNotifier(Notifier):
             raise NotifyError("; ".join(errors))
 
     def alert(self, message: str) -> None:
-        target = self._fallback or next(iter(self._notifiers.values()), None)
+        target = self._alert or self._fallback or next(iter(self._notifiers.values()), None)
         if target is None:
             logger.warning("경고를 보낼 채널이 없습니다: %s", message)
             return
