@@ -64,7 +64,8 @@ class DiscordWebhookNotifier(Notifier):
         request = urllib.request.Request(
             self._webhook_url,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            # Discord(Cloudflare)가 기본 Python-urllib User-Agent의 POST를 403으로 차단한다
+            headers={"Content-Type": "application/json", "User-Agent": "yongamaek-bot/1.0"},
         )
         try:
             with urllib.request.urlopen(request, timeout=self._timeout_sec):
