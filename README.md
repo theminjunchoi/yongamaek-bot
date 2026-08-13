@@ -62,3 +62,4 @@ src/
 
 - HTTP 클라이언트는 반드시 `urllib` 사용 — Cloudflare가 curl 등 비브라우저 TLS 핑거프린트를 차단한다 (2026-08 실측)
 - `User-Agent`와 `Referer: https://cgv.co.kr/cnm/movieBook/cinema` 헤더가 없으면 403
+- macOS에서는 **Homebrew Python**으로 실행할 것 — Xcode 내장 Python(`/usr/bin/python3`)은 TLS 스택 차이로 CGV API에서 전부 403이 난다 (2026-08 실측)
