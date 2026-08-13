@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 from collections import defaultdict
 
+from .booking_link import BookingLinkBuilder
 from .models import Screening
 from .notifier import Notifier, NotifyError
 
@@ -18,9 +19,15 @@ MAX_EMBEDS_PER_MESSAGE = 10
 
 
 class DiscordWebhookNotifier(Notifier):
-    def __init__(self, webhook_url: str, booking_url: str, mention: str = "@here", timeout_sec: float = 10.0):
+    def __init__(
+        self,
+        webhook_url: str,
+        link_builder: BookingLinkBuilder,
+        mention: str = "@here",
+        timeout_sec: float = 10.0,
+    ):
         self._webhook_url = webhook_url
-        self._booking_url = booking_url
+        self._links = link_builder
         self._mention = mention
         self._timeout_sec = timeout_sec
 
@@ -52,7 +59,7 @@ class DiscordWebhookNotifier(Notifier):
             embeds.append(
                 {
                     "title": product_name,
-                    "url": f"{self._booking_url}&scnYmd={date}",
+                    "url": self._links.build(group[0].movie_no, date),
                     "color": EMBED_COLOR,
                     "description": f"**{group[0].date_display}**\n{times}",
                     "footer": {"text": f"{group[0].screen_name} · {group[0].rating}"},

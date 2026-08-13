@@ -10,6 +10,7 @@ import logging
 from collections import defaultdict
 from typing import Optional
 
+from .booking_link import BookingLinkBuilder
 from .discord_notifier import DiscordWebhookNotifier
 from .notifier import Notifier, NotifyError
 from .routes import RouteTable
@@ -18,19 +19,19 @@ logger = logging.getLogger(__name__)
 
 
 class RoutingNotifier(Notifier):
-    def __init__(self, table: RouteTable, booking_url: str):
+    def __init__(self, table: RouteTable, link_builder: BookingLinkBuilder):
         self._table = table
         self._notifiers = {
-            route.name: DiscordWebhookNotifier(route.webhook_url, booking_url)
+            route.name: DiscordWebhookNotifier(route.webhook_url, link_builder)
             for route in table.routes
         }
         self._fallback: Optional[DiscordWebhookNotifier] = (
-            DiscordWebhookNotifier(table.fallback_webhook_url, booking_url)
+            DiscordWebhookNotifier(table.fallback_webhook_url, link_builder)
             if table.fallback_webhook_url
             else None
         )
         self._alert: Optional[DiscordWebhookNotifier] = (
-            DiscordWebhookNotifier(table.alert_webhook_url, booking_url)
+            DiscordWebhookNotifier(table.alert_webhook_url, link_builder)
             if table.alert_webhook_url
             else None
         )

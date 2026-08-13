@@ -35,11 +35,6 @@ class Config:
             routes_path=Path(os.environ.get("ROUTES_PATH", cls.routes_path)),
         )
 
-    @property
-    def booking_url(self) -> str:
-        return f"https://cgv.co.kr/cnm/movieBook/cinema?siteNo={self.site_no}"
-
-
 def _load_env_file(path: Path) -> None:
     """단순 KEY=VALUE 형식의 .env를 읽어 미설정 환경변수만 채운다."""
     if not path.exists():

@@ -9,6 +9,7 @@ import sys
 from typing import Optional
 
 from .app import MonitorApp
+from .booking_link import BookingLinkBuilder
 from .cgv_http_source import CgvHttpScheduleSource
 from .config import Config
 from .detector import OpeningDetector
@@ -22,10 +23,11 @@ from .snapshot_store import JsonSnapshotStore
 
 def _build_notifier(config: Config) -> Optional[Notifier]:
     """routes.json이 있으면 영화별 채널 라우팅, 없으면 단일 웹훅 모드."""
+    links = BookingLinkBuilder(config.site_no)
     if config.routes_path.exists():
-        return RoutingNotifier(RouteTable.load(config.routes_path), config.booking_url)
+        return RoutingNotifier(RouteTable.load(config.routes_path), links)
     if config.discord_webhook_url:
-        return DiscordWebhookNotifier(config.discord_webhook_url, config.booking_url)
+        return DiscordWebhookNotifier(config.discord_webhook_url, links)
     return None
 
 
