@@ -50,7 +50,14 @@ class MonitorApp:
             self._config.night_poll_interval_sec,
             self._config.days_ahead,
         )
+        started = time.monotonic()
         while True:
+            if (
+                self._config.max_runtime_sec
+                and time.monotonic() - started >= self._config.max_runtime_sec
+            ):
+                logger.info("최대 실행 시간(%.0f초) 도달, 정상 종료", self._config.max_runtime_sec)
+                return
             delay = self._run_cycle_guarded()
             time.sleep(delay)
 

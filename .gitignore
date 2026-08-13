@@ -1,7 +1,6 @@
 .env
-state/
+routes.json
 __pycache__/
 *.pyc
 *.log
 nohup.out
-routes.json

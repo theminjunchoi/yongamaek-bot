@@ -67,6 +67,17 @@ src/
 └── backoff.py            # 연속 실패 시 지수 백오프
 ```
 
+## 운영 (GitHub Actions)
+
+`.github/workflows/poller.yml`이 24시간 감시를 담당한다: 30분 cron이 잡을 큐잉하되
+concurrency 그룹으로 동시 실행을 막아, 5시간 20분짜리 폴링 잡이 끝나면 대기 잡이
+즉시 이어받는다 (평상시 알림 지연 = 폴링 간격 60초, 잡 교체 시에만 ~1분 공백).
+
+- 웹훅 URL은 레포 Secret `ROUTES_JSON`(routes.json 전체 내용)으로 주입
+- `state/snapshot.json`은 잡 종료 시 커밋되어 잡 간 연속성을 유지
+- Oracle 등 클라우드 VM 직접 폴링은 불가 — CGV가 데이터센터 IP 대역을 WAF에서
+  하드 차단한다 (2026-08 실측, GitHub Actions 러너 IP는 통과)
+
 ## 동작 규칙
 
 - 알림 단위는 **영화×날짜**: 새 날짜가 열리거나, 열린 날짜에 새 영화가 편성되면 알린다.

@@ -1,0 +1,42 @@
+name: poller
+
+# 30분마다 잡을 큐잉하지만 concurrency 그룹이 동시 실행을 막으므로,
+# 실제로는 5시간 20분짜리 폴링 잡이 끝나는 즉시 대기 중인 다음 잡이 시작된다.
+# (GitHub은 같은 그룹의 대기 잡을 최신 1개만 남기고 정리한다)
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: poller
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: routes.json 생성 (Secrets)
+        env:
+          ROUTES_JSON: ${{ secrets.ROUTES_JSON }}
+        run: printf '%s' "$ROUTES_JSON" > routes.json
+
+      - name: 폴링 실행 (5시간 20분)
+        env:
+          MAX_RUNTIME_SEC: "19200"
+        run: python3 -m src.main
+
+      - name: 스냅샷 커밋
+        if: always()
+        run: |
+          git config user.name "yongamaek-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin main || true
+          git add state/snapshot.json
+          git diff --cached --quiet || { git commit -m "chore: 스냅샷 갱신" && git push; }

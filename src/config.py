@@ -19,6 +19,7 @@ class Config:
     snapshot_path: Path = Path("state/snapshot.json")
     routes_path: Path = Path("routes.json")
     alert_after_failures: int = 5
+    max_runtime_sec: float = 0.0  # 0이면 무제한. GitHub Actions처럼 잡 시간 제한이 있는 환경용
 
     @classmethod
     def from_env(cls, env_file: Path = Path(".env")) -> "Config":
@@ -33,6 +34,7 @@ class Config:
             days_ahead=int(os.environ.get("DAYS_AHEAD", cls.days_ahead)),
             snapshot_path=Path(os.environ.get("SNAPSHOT_PATH", cls.snapshot_path)),
             routes_path=Path(os.environ.get("ROUTES_PATH", cls.routes_path)),
+            max_runtime_sec=float(os.environ.get("MAX_RUNTIME_SEC", cls.max_runtime_sec)),
         )
 
 def _load_env_file(path: Path) -> None:
