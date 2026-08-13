@@ -44,7 +44,7 @@ class DiscordWebhookNotifier(Notifier):
         dates = sorted({s.date for s in screenings})
         date_ko = next(s for s in screenings if s.date == dates[0]).date_display_ko
         date_part = date_ko if len(dates) == 1 else f"{date_ko} 외 {len(dates) - 1}일"
-        return f"{self._mention} 🎬 **{', '.join(movies)}** 용아맥 예매 오픈! — {date_part}"
+        return f"{self._mention}\n## 🎬 {', '.join(movies)} 용아맥 예매 오픈! — {date_part}"
 
     def alert(self, message: str) -> None:
         try:
@@ -67,10 +67,14 @@ class DiscordWebhookNotifier(Notifier):
             )
             embeds.append(
                 {
-                    "title": f"📅 {group[0].date_display_ko} — {product_name}",
+                    "title": product_name,
                     "url": link,
                     "color": EMBED_COLOR,
-                    "description": f"{times}\n\n👉 **[CGV 앱에서 바로 예매하기]({link})**",
+                    # 제목 필드는 마크다운이 렌더링되지 않으므로 날짜는 본문 헤더(##)로 키운다
+                    "description": (
+                        f"## 📅 {group[0].date_display_ko}\n"
+                        f"{times}\n\n👉 **[CGV 앱에서 바로 예매하기]({link})**"
+                    ),
                     "footer": {
                         "text": f"{group[0].screen_name} · {group[0].rating} · 총 {group[0].total_seats}석"
                     },
