@@ -1,0 +1,15 @@
+[Unit]
+Description=yongamaek-bot (CGV 용산 IMAX 예매 오픈 알림)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/yongamaek-bot
+ExecStart=/usr/bin/python3 -m src.main
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
