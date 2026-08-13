@@ -12,5 +12,6 @@
     }
   ],
   "fallback_webhook_url": "(선택) 라우트에 없는 새 영화가 열렸을 때 받을 채널 웹훅. 비우면 로그만 남김",
-  "alert_webhook_url": "(선택) 봇 장애 경고를 받을 채널 웹훅"
+  "alert_webhook_url": "(선택) 봇 장애 경고를 받을 채널 웹훅",
+  "pattern_webhook_url": "(선택) 오픈 감지 이벤트를 한 줄씩 기록할 채널 웹훅 (state/openings.jsonl에도 함께 기록됨)"
 }

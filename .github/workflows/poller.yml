@@ -40,11 +40,11 @@ jobs:
           python3 -m src.main
           kill $MEMBER_PID 2>/dev/null || true
 
-      - name: 스냅샷 커밋
+      - name: 스냅샷·오픈 기록 커밋
         if: always()
         run: |
           git config user.name "yongamaek-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash origin main || true
-          git add state/snapshot.json
-          git diff --cached --quiet || { git commit -m "chore: 스냅샷 갱신" && git push; }
+          git add state/
+          git diff --cached --quiet || { git commit -m "chore: 스냅샷·오픈 기록 갱신" && git push; }

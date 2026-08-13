@@ -1,0 +1,25 @@
+name: watchdog
+
+# poller 잡 자체가 실패하면 장애 채널로 경고한다.
+# (봇 내부의 CGV 조회 실패 경고와 별개로, "감시자가 죽은 경우"를 잡는 안전망)
+on:
+  workflow_run:
+    workflows: [poller]
+    types: [completed]
+
+jobs:
+  alert-on-failure:
+    if: github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 장애 채널로 경고 발송
+        env:
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          curl -sS -X POST "$ALERT_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: yongamaek-bot/1.0" \
+            -d "{\"content\": \"⚠️ **용아맥 봇 Actions 잡 실패** (\`$CONCLUSION\`) — 폴링이 멈췄을 수 있습니다.\\n$RUN_URL\"}"

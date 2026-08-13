@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import urllib.error
-import urllib.request
 from collections import defaultdict
 
+from . import discord_webhook
 from .booking_link import BookingLinkBuilder
 from .models import Screening
 from .notifier import Notifier, NotifyError
@@ -83,16 +81,4 @@ class DiscordWebhookNotifier(Notifier):
         return embeds
 
     def _post(self, payload: dict) -> None:
-        request = urllib.request.Request(
-            self._webhook_url,
-            data=json.dumps(payload).encode("utf-8"),
-            # Discord(Cloudflare)가 기본 Python-urllib User-Agent의 POST를 403으로 차단한다
-            headers={"Content-Type": "application/json", "User-Agent": "yongamaek-bot/1.0"},
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=self._timeout_sec):
-                pass
-        except urllib.error.HTTPError as e:
-            raise NotifyError(f"Discord 웹훅 HTTP {e.code}") from e
-        except (urllib.error.URLError, TimeoutError, OSError) as e:
-            raise NotifyError(f"Discord 웹훅 네트워크 오류: {e}") from e
+        discord_webhook.post(self._webhook_url, payload, timeout_sec=self._timeout_sec)

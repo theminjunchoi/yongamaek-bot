@@ -8,11 +8,14 @@ import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from typing import Optional
+
 from .backoff import BackoffPolicy
 from .config import Config
 from .detector import OpeningDetector
 from .imax_filter import ImaxFilter
 from .notifier import Notifier, NotifyError
+from .pattern_logger import OpeningPatternLogger
 from .schedule_source import ScheduleFetchError, ScheduleSource
 from .snapshot_store import JsonSnapshotStore
 
@@ -32,6 +35,7 @@ class MonitorApp:
         detector: OpeningDetector,
         notifier: Notifier,
         config: Config,
+        pattern_logger: Optional[OpeningPatternLogger] = None,
     ):
         self._source = source
         self._filter = imax_filter
@@ -39,6 +43,7 @@ class MonitorApp:
         self._detector = detector
         self._notifier = notifier
         self._config = config
+        self._pattern_logger = pattern_logger
         self._backoff = BackoffPolicy()
         self._alerted_failure = False
         self._last_full_sweep = 0.0
@@ -122,6 +127,8 @@ class MonitorApp:
         if new_screenings:
             logger.info("신규 오픈 감지: %d건", len(new_screenings))
             self._notifier.notify_openings(new_screenings)  # 실패 시 예외 → 스냅샷 미저장
+            if self._pattern_logger is not None:
+                self._pattern_logger.record(new_screenings)
             known |= {s.key for s in new_screenings}
 
         today = datetime.now(KST).strftime("%Y%m%d")

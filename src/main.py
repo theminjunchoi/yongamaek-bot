@@ -16,6 +16,7 @@ from .detector import OpeningDetector
 from .discord_notifier import DiscordWebhookNotifier
 from .imax_filter import ImaxFilter
 from .notifier import ConsoleNotifier, Notifier
+from .pattern_logger import OpeningPatternLogger
 from .routes import RouteTable
 from .routing_notifier import RoutingNotifier
 from .snapshot_store import JsonSnapshotStore
@@ -31,7 +32,7 @@ def _build_notifier(config: Config) -> Optional[Notifier]:
     return None
 
 
-def build_app(config: Config, notifier: Notifier) -> MonitorApp:
+def build_app(config: Config, notifier: Notifier, pattern_logger=None) -> MonitorApp:
     return MonitorApp(
         source=CgvHttpScheduleSource(site_no=config.site_no),
         imax_filter=ImaxFilter(),
@@ -39,6 +40,7 @@ def build_app(config: Config, notifier: Notifier) -> MonitorApp:
         detector=OpeningDetector(),
         notifier=notifier,
         config=config,
+        pattern_logger=pattern_logger,
     )
 
 
@@ -68,7 +70,15 @@ def main() -> int:
         )
         return 1
 
-    app = build_app(config, notifier)
+    pattern_logger = None
+    if config.routes_path.exists():
+        table = RouteTable.load(config.routes_path)
+        if table.pattern_webhook_url:
+            pattern_logger = OpeningPatternLogger(
+                table.pattern_webhook_url, config.snapshot_path.parent / "openings.jsonl"
+            )
+
+    app = build_app(config, notifier, pattern_logger)
     try:
         app.run_forever()
     except KeyboardInterrupt:
