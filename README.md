@@ -16,7 +16,7 @@ cp .env.example .env  # 웹훅 URL 채우기
 python3 -m src.main
 ```
 
-Python 3.11+ / 외부 의존성 없음.
+Python 3.9+ / 외부 의존성 없음.
 
 ## 설정 (.env)
 

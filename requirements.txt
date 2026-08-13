@@ -1,2 +1,2 @@
-# MVP는 Python 표준 라이브러리만 사용한다 (Python 3.11+).
+# MVP는 Python 표준 라이브러리만 사용한다 (Python 3.9+).
 # 주의: requests/httpx 등은 Cloudflare TLS 핑거프린트 차단 위험이 있어 urllib을 쓴다.
