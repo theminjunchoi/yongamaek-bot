@@ -4,7 +4,6 @@
 
 **CGV 용산아이파크몰 IMAX 예매가 열리는 순간, 60초 안에 폰으로.**
 
-[![poller](https://github.com/theminjunchoi/yongamaek-bot/actions/workflows/poller.yml/badge.svg)](https://github.com/theminjunchoi/yongamaek-bot/actions/workflows/poller.yml)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)
 ![Discord](https://img.shields.io/badge/Discord-Webhook%20%2B%20Bot-5865F2?logo=discord&logoColor=white)
 ![Hosting](https://img.shields.io/badge/Hosting-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)
