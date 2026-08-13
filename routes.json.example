@@ -1,0 +1,15 @@
+{
+  "routes": [
+    {
+      "name": "오디세이",
+      "keywords": ["오디세이", "ODYSSEY"],
+      "webhook_url": "https://discord.com/api/webhooks/... (#오디세이-알림 채널 웹훅)"
+    },
+    {
+      "name": "스파이더맨",
+      "keywords": ["스파이더맨", "SPIDER"],
+      "webhook_url": "https://discord.com/api/webhooks/... (#스파이더맨-알림 채널 웹훅)"
+    }
+  ],
+  "fallback_webhook_url": "https://discord.com/api/webhooks/... (라우트에 없는 새 영화가 열렸을 때 + 봇 장애 경고를 받을 채널. 비우면 로그만 남김)"
+}

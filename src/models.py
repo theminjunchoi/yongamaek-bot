@@ -26,8 +26,13 @@ class Screening:
 
     @property
     def key(self) -> str:
-        """회차 고유 키. 스냅샷 diff의 기준."""
-        return f"{self.date}|{self.screen_no}|{self.seq}"
+        """스냅샷 diff의 기준 키: 영화×날짜.
+
+        "새 날짜(또는 새 영화)의 예매 오픈"만 알리고, 이미 열린 날짜에
+        같은 영화의 회차가 추가되는 것은 알리지 않기 위해 회차 단위가 아닌
+        영화×날짜 단위로 잡는다. 날짜가 앞에 와야 지난 키 정리가 동작한다.
+        """
+        return f"{self.date}|{self.movie_no}"
 
     @property
     def start_time_display(self) -> str:

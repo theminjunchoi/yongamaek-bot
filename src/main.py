@@ -6,6 +6,8 @@ import argparse
 import logging
 import sys
 
+from typing import Optional
+
 from .app import MonitorApp
 from .cgv_http_source import CgvHttpScheduleSource
 from .config import Config
@@ -13,7 +15,18 @@ from .detector import OpeningDetector
 from .discord_notifier import DiscordWebhookNotifier
 from .imax_filter import ImaxFilter
 from .notifier import ConsoleNotifier, Notifier
+from .routes import RouteTable
+from .routing_notifier import RoutingNotifier
 from .snapshot_store import JsonSnapshotStore
+
+
+def _build_notifier(config: Config) -> Optional[Notifier]:
+    """routes.json이 있으면 영화별 채널 라우팅, 없으면 단일 웹훅 모드."""
+    if config.routes_path.exists():
+        return RoutingNotifier(RouteTable.load(config.routes_path), config.booking_url)
+    if config.discord_webhook_url:
+        return DiscordWebhookNotifier(config.discord_webhook_url, config.booking_url)
+    return None
 
 
 def build_app(config: Config, notifier: Notifier) -> MonitorApp:
@@ -45,14 +58,14 @@ def main() -> int:
         print(f"\n총 {len(screenings)}개 IMAX 회차가 열려 있습니다.")
         return 0
 
-    if not config.discord_webhook_url:
-        print("DISCORD_WEBHOOK_URL이 설정되지 않았습니다. .env를 확인하세요.", file=sys.stderr)
+    notifier = _build_notifier(config)
+    if notifier is None:
+        print(
+            "알림 설정이 없습니다. routes.json(영화별 채널) 또는 .env의 DISCORD_WEBHOOK_URL을 설정하세요.",
+            file=sys.stderr,
+        )
         return 1
 
-    notifier = DiscordWebhookNotifier(
-        webhook_url=config.discord_webhook_url,
-        booking_url=config.booking_url,
-    )
     app = build_app(config, notifier)
     try:
         app.run_forever()

@@ -2,8 +2,22 @@
 
 CGV 용산아이파크몰 IMAX관(용아맥) 예매가 열리는 순간 Discord로 알림을 보내는 봇.
 
-CGV 스케줄 API를 짧은 주기로 폴링해서, 스냅샷에 없던 IMAX 회차가 나타나면
-Discord 웹훅으로 영화명·날짜·상영시간·잔여석·예매 링크를 발송한다.
+CGV 스케줄 API를 짧은 주기로 폴링해서 **새 날짜(또는 새 영화)의 IMAX 예매 오픈**을
+감지하면, 그 영화의 전용 채널 웹훅으로 날짜·상영시간·잔여석·예매 링크를 발송한다.
+이미 열린 날짜에 같은 영화의 회차가 추가되는 것은 알리지 않는다.
+
+## 영화별 채널 구독
+
+영화마다 Discord 채널을 만들고(`#오디세이-알림`, `#스파이더맨-알림`, …) 각 채널의
+웹훅을 `routes.json`에 등록한다. 사용자는 보고 싶은 영화 채널의 알림만 켜면 된다.
+라우트에 없는 새 영화가 열리면 `fallback_webhook_url` 채널로 알림이 가므로,
+거기서 보고 새 채널을 만들어 라우트에 추가하면 된다.
+
+```bash
+cp routes.json.example routes.json  # 채널별 웹훅 URL 채우기
+```
+
+`routes.json`이 없으면 `.env`의 `DISCORD_WEBHOOK_URL` 단일 채널 모드로 동작한다.
 
 ## 실행
 
@@ -11,8 +25,7 @@ Discord 웹훅으로 영화명·날짜·상영시간·잔여석·예매 링크�
 # 1회 조회: 현재 열려있는 IMAX 회차 확인 (웹훅 불필요)
 python3 -m src.main --once
 
-# 상시 감시 (.env에 DISCORD_WEBHOOK_URL 필요)
-cp .env.example .env  # 웹훅 URL 채우기
+# 상시 감시
 python3 -m src.main
 ```
 
@@ -22,7 +35,8 @@ Python 3.9+ / 외부 의존성 없음.
 
 | 변수 | 기본값 | 설명 |
 |---|---|---|
-| `DISCORD_WEBHOOK_URL` | (필수) | Discord 채널 웹훅 URL |
+| `ROUTES_PATH` | `routes.json` | 영화별 채널 라우팅 설정 경로 |
+| `DISCORD_WEBHOOK_URL` | — | 단일 채널 모드용 웹훅 (routes.json 없을 때만 사용) |
 | `CGV_SITE_NO` | `0013` | 극장 코드 (용산아이파크몰) |
 | `POLL_INTERVAL_SEC` | `60` | 폴링 간격(초) |
 | `NIGHT_POLL_INTERVAL_SEC` | `300` | 심야(KST 01~07시) 폴링 간격 |
@@ -48,13 +62,17 @@ src/
 ├── detector.py           # 스냅샷 diff로 신규 오픈 감지
 ├── notifier.py           # Notifier(ABC) ← 확장점
 ├── discord_notifier.py   # Discord 웹훅 embed 발송
+├── routes.py             # 영화 → 채널 웹훅 라우팅 테이블
+├── routing_notifier.py   # 영화별 채널로 알림 분배
 └── backoff.py            # 연속 실패 시 지수 백오프
 ```
 
 ## 동작 규칙
 
+- 알림 단위는 **영화×날짜**: 새 날짜가 열리거나, 열린 날짜에 새 영화가 편성되면 알린다.
+  이미 열린 영화×날짜에 회차만 추가되는 것은 무시한다
 - 첫 실행(스냅샷 없음)은 알림 없이 스냅샷만 구축한다
-- 알림 발송에 성공한 회차만 스냅샷에 기록한다 (실패 시 다음 사이클에 재시도)
+- 알림 발송에 성공한 오픈만 스냅샷에 기록한다 (실패 시 다음 사이클에 재시도)
 - 조회 실패가 연속되면 지수 백오프(최대 30분), 5회 연속 실패 시 장애 경고를 1회 발송한다
 - 상영일이 지난 키는 자동 정리한다
 

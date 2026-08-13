@@ -17,6 +17,7 @@ class Config:
     request_delay_min_sec: float = 1.0
     request_delay_max_sec: float = 2.0
     snapshot_path: Path = Path("state/snapshot.json")
+    routes_path: Path = Path("routes.json")
     alert_after_failures: int = 5
 
     @classmethod
@@ -31,6 +32,7 @@ class Config:
             ),
             days_ahead=int(os.environ.get("DAYS_AHEAD", cls.days_ahead)),
             snapshot_path=Path(os.environ.get("SNAPSHOT_PATH", cls.snapshot_path)),
+            routes_path=Path(os.environ.get("ROUTES_PATH", cls.routes_path)),
         )
 
     @property
