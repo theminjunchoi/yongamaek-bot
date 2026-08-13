@@ -27,10 +27,18 @@ jobs:
           ROUTES_JSON: ${{ secrets.ROUTES_JSON }}
         run: printf '%s' "$ROUTES_JSON" > routes.json
 
-      - name: 폴링 실행 (5시간 20분)
+      - name: 의존성 설치 (멤버 봇용)
+        run: pip install -q -r requirements.txt
+
+      - name: 폴링 + 멤버 봇 실행 (5시간 20분)
         env:
           MAX_RUNTIME_SEC: "19200"
-        run: python3 -m src.main
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          python3 -m src.member_bot &
+          MEMBER_PID=$!
+          python3 -m src.main
+          kill $MEMBER_PID 2>/dev/null || true
 
       - name: 스냅샷 커밋
         if: always()

@@ -1,2 +1,5 @@
-# MVP는 Python 표준 라이브러리만 사용한다 (Python 3.9+).
+# 폴러(src/main.py)는 표준 라이브러리만 사용한다 (Python 3.9+).
 # 주의: requests/httpx 등은 Cloudflare TLS 핑거프린트 차단 위험이 있어 urllib을 쓴다.
+
+# 멤버 봇(src/member_bot.py) 전용
+discord.py>=2.4
