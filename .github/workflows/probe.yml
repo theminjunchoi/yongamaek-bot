@@ -1,0 +1,13 @@
+name: probe
+
+# 러너 환경에서 CGV API가 통하는지 1회 조회로 확인하는 진단용 워크플로.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m src.main --once | tail -3
