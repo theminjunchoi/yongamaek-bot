@@ -46,6 +46,15 @@ class Screening:
         d = self.date
         return f"{d[:4]}-{d[4:6]}-{d[6:]}"
 
+    @property
+    def date_display_ko(self) -> str:
+        """"20260826" -> "8월 26일 (수)"."""
+        from datetime import datetime
+
+        dt = datetime.strptime(self.date, "%Y%m%d")
+        weekday = "월화수목금토일"[dt.weekday()]
+        return f"{dt.month}월 {dt.day}일 ({weekday})"
+
     @classmethod
     def from_api(cls, row: dict) -> "Screening":
         """searchMovScnInfo 응답의 행 하나를 모델로 변환한다."""

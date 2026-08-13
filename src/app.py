@@ -41,6 +41,7 @@ class MonitorApp:
         self._config = config
         self._backoff = BackoffPolicy()
         self._alerted_failure = False
+        self._last_full_sweep = 0.0
 
     def run_forever(self) -> None:
         logger.info(
@@ -63,7 +64,7 @@ class MonitorApp:
 
     def run_once(self) -> list:
         """1회 조회 모드: 현재 열려있는 IMAX 회차 전체를 출력한다. 상태 변경 없음."""
-        screenings = self._fetch_all_imax()
+        screenings = self._fetch_imax(self._dates_to_check())
         self._notifier.notify_openings(screenings)
         return screenings
 
@@ -98,15 +99,24 @@ class MonitorApp:
         return self._current_interval()
 
     def _run_cycle(self) -> None:
-        current = self._fetch_all_imax()
-
         if not self._store.exists():
             # 첫 실행: 기존 회차 전체가 신규로 오인되지 않도록 알림 없이 스냅샷만 구축
+            current = self._fetch_imax(self._dates_to_check())
             self._store.save({s.key for s in current})
+            self._last_full_sweep = time.monotonic()
             logger.info("초기 스냅샷 구축: 회차 %d건 (알림 생략)", len(current))
             return
 
         known = self._store.load()
+
+        # 매 사이클은 "마지막 오픈 날짜 이후"만 빠르게 보고(새 날짜 오픈 감지),
+        # 주기적으로만 전체 범위를 스캔한다(열린 날짜에 새 영화가 편성되는 경우 감지).
+        full = time.monotonic() - self._last_full_sweep >= self._config.full_sweep_interval_sec
+        dates = self._dates_to_check() if full else self._frontier_dates(known)
+        current = self._fetch_imax(dates)
+        if full:
+            self._last_full_sweep = time.monotonic()
+
         new_screenings = self._detector.detect(known, current)
 
         if new_screenings:
@@ -117,14 +127,13 @@ class MonitorApp:
         today = datetime.now(KST).strftime("%Y%m%d")
         self._store.save(self._detector.prune_expired(known, today))
 
-    def _fetch_all_imax(self) -> list:
-        """오늘부터 days_ahead일치를 조회해 IMAX 회차만 모은다.
+    def _fetch_imax(self, dates: list) -> list:
+        """주어진 날짜들을 조회해 IMAX 회차만 모은다.
 
         일부 날짜 실패는 건너뛰되, 전부 실패하면 사이클 실패로 본다.
         """
         screenings = []
         errors: list[ScheduleFetchError] = []
-        dates = self._dates_to_check()
         for i, date in enumerate(dates):
             if i > 0:
                 time.sleep(
@@ -145,6 +154,17 @@ class MonitorApp:
     def _dates_to_check(self) -> list[str]:
         today = datetime.now(KST).date()
         return [(today + timedelta(days=n)).strftime("%Y%m%d") for n in range(self._config.days_ahead)]
+
+    def _frontier_dates(self, known_keys: set) -> list[str]:
+        """스냅샷의 마지막 오픈 날짜 다음 날부터 frontier_ahead일치를 반환한다."""
+        today_str = datetime.now(KST).strftime("%Y%m%d")
+        last_open = max((k.split("|", 1)[0] for k in known_keys), default=today_str)
+        base = max(last_open, today_str)
+        base_date = datetime.strptime(base, "%Y%m%d").date()
+        return [
+            (base_date + timedelta(days=n)).strftime("%Y%m%d")
+            for n in range(1, self._config.frontier_ahead + 1)
+        ]
 
     def _current_interval(self) -> float:
         hour = datetime.now(KST).hour

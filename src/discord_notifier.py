@@ -35,8 +35,16 @@ class DiscordWebhookNotifier(Notifier):
         embeds = self._build_embeds(screenings)
         for chunk_start in range(0, len(embeds), MAX_EMBEDS_PER_MESSAGE):
             chunk = embeds[chunk_start : chunk_start + MAX_EMBEDS_PER_MESSAGE]
-            content = f"{self._mention} 🎬 **용아맥 예매 오픈!**" if chunk_start == 0 else ""
+            content = self._build_content(screenings) if chunk_start == 0 else ""
             self._post({"content": content, "embeds": chunk})
+
+    def _build_content(self, screenings: list[Screening]) -> str:
+        """푸시 알림 미리보기에 영화명·날짜가 바로 보이도록 첫 줄을 구성한다."""
+        movies = sorted({s.movie_name for s in screenings})
+        dates = sorted({s.date for s in screenings})
+        date_ko = next(s for s in screenings if s.date == dates[0]).date_display_ko
+        date_part = date_ko if len(dates) == 1 else f"{date_ko} 외 {len(dates) - 1}일"
+        return f"{self._mention} 🎬 **{', '.join(movies)}** 용아맥 예매 오픈! — {date_part}"
 
     def alert(self, message: str) -> None:
         try:
@@ -53,16 +61,19 @@ class DiscordWebhookNotifier(Notifier):
         embeds = []
         for (product_name, date), group in sorted(grouped.items(), key=lambda item: item[0][1]):
             group.sort(key=lambda s: s.start_time)
+            link = self._links.build(group[0].movie_no, date)
             times = "\n".join(
-                f"• {s.start_time_display} (잔여 {s.remaining_seats}/{s.total_seats}석)" for s in group
+                f"🕐 **{s.start_time_display}**  ·  잔여 **{s.remaining_seats}**석" for s in group
             )
             embeds.append(
                 {
-                    "title": product_name,
-                    "url": self._links.build(group[0].movie_no, date),
+                    "title": f"📅 {group[0].date_display_ko} — {product_name}",
+                    "url": link,
                     "color": EMBED_COLOR,
-                    "description": f"**{group[0].date_display}**\n{times}",
-                    "footer": {"text": f"{group[0].screen_name} · {group[0].rating}"},
+                    "description": f"{times}\n\n👉 **[CGV 앱에서 바로 예매하기]({link})**",
+                    "footer": {
+                        "text": f"{group[0].screen_name} · {group[0].rating} · 총 {group[0].total_seats}석"
+                    },
                 }
             )
         return embeds
