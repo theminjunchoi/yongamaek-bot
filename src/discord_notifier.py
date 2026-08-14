@@ -63,21 +63,23 @@ class DiscordWebhookNotifier(Notifier):
             times = "\n".join(
                 f"🕐 **{s.start_time_display}**  ·  잔여 **{s.remaining_seats}**석" for s in group
             )
-            embeds.append(
-                {
-                    "title": product_name,
-                    "url": link,
-                    "color": EMBED_COLOR,
-                    # 제목 필드는 마크다운이 렌더링되지 않으므로 날짜는 본문 헤더(##)로 키운다
-                    "description": (
-                        f"## 📅 {group[0].date_display_ko}\n"
-                        f"{times}\n\n👉 **[CGV 앱에서 바로 예매하기]({link})**"
-                    ),
-                    "footer": {
-                        "text": f"{group[0].screen_name} · {group[0].rating} · 총 {group[0].total_seats}석"
-                    },
-                }
-            )
+            embed = {
+                "title": product_name,
+                "url": link,
+                "color": EMBED_COLOR,
+                # 제목 필드는 마크다운이 렌더링되지 않으므로 날짜는 본문 헤더(##)로 키운다
+                "description": (
+                    f"## 📅 {group[0].date_display_ko}\n"
+                    f"{times}\n\n👉 **[CGV 앱에서 바로 예매하기]({link})**"
+                ),
+                "footer": {
+                    "text": f"{group[0].screen_name} · {group[0].rating} · 총 {group[0].total_seats}석"
+                },
+            }
+            poster_url = group[0].poster_url
+            if poster_url:
+                embed["image"] = {"url": poster_url}
+            embeds.append(embed)
         return embeds
 
     def _post(self, payload: dict) -> None:

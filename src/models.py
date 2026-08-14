@@ -23,6 +23,14 @@ class Screening:
     remaining_seats: int
     total_seats: int
     rating: str
+    poster_path: str = ""  # physcFilePathnm, 예: "030001/30001323/30001323_185.jpg"
+
+    @property
+    def poster_url(self) -> str:
+        """무인증으로 열리는 CGV 포스터 CDN URL. 경로가 없으면 빈 문자열."""
+        if not self.poster_path:
+            return ""
+        return f"https://cdn.cgv.co.kr/cgvpomsfilm/Movie/Thumbnail/Poster/{self.poster_path}"
 
     @property
     def key(self) -> str:
@@ -80,4 +88,5 @@ class Screening:
             remaining_seats=_int(row.get("frSeatCnt")),
             total_seats=_int(row.get("stcnt")),
             rating=str(row.get("cratgClsNm", "")),
+            poster_path=str(row.get("physcFilePathnm", "") or ""),
         )
