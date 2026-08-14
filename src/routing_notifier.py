@@ -13,34 +13,45 @@ from typing import Optional
 from .booking_link import BookingLinkBuilder
 from .discord_notifier import DiscordWebhookNotifier
 from .notifier import Notifier, NotifyError
-from .routes import RouteTable
 
 logger = logging.getLogger(__name__)
 
 
 class RoutingNotifier(Notifier):
-    def __init__(self, table: RouteTable, link_builder: BookingLinkBuilder):
-        self._table = table
+    def __init__(
+        self,
+        routes: tuple,
+        link_builder: BookingLinkBuilder,
+        fallback_webhook_url: str = "",
+        alert_webhook_url: str = "",
+    ):
+        self._routes = routes
         self._notifiers = {
             route.name: DiscordWebhookNotifier(route.webhook_url, link_builder)
-            for route in table.routes
+            for route in routes
         }
         self._fallback: Optional[DiscordWebhookNotifier] = (
-            DiscordWebhookNotifier(table.fallback_webhook_url, link_builder)
-            if table.fallback_webhook_url
+            DiscordWebhookNotifier(fallback_webhook_url, link_builder)
+            if fallback_webhook_url
             else None
         )
         self._alert: Optional[DiscordWebhookNotifier] = (
-            DiscordWebhookNotifier(table.alert_webhook_url, link_builder)
-            if table.alert_webhook_url
+            DiscordWebhookNotifier(alert_webhook_url, link_builder)
+            if alert_webhook_url
             else None
         )
+
+    def _match(self, screening):
+        for route in self._routes:
+            if route.matches(screening):
+                return route
+        return None
 
     def notify_openings(self, screenings: list) -> None:
         by_route: dict = defaultdict(list)
         unmatched: list = []
         for s in screenings:
-            route = self._table.match(s)
+            route = self._match(s)
             if route is not None:
                 by_route[route.name].append(s)
             else:

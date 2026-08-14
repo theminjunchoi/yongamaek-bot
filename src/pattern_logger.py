@@ -22,9 +22,10 @@ KST = ZoneInfo("Asia/Seoul")
 
 
 class OpeningPatternLogger:
-    def __init__(self, webhook_url: str, log_path: Path):
+    def __init__(self, webhook_url: str, log_path: Path, theater_name: str = ""):
         self._webhook_url = webhook_url
         self._log_path = log_path
+        self._theater_name = theater_name
 
     def record(self, screenings: list) -> None:
         if not screenings:
@@ -45,6 +46,7 @@ class OpeningPatternLogger:
             entry = {
                 "detected_at": detected_at.isoformat(timespec="seconds"),
                 "weekday": "월화수목금토일"[detected_at.weekday()],
+                "theater": self._theater_name,
                 "movie": movie,
                 "movie_no": group[0].movie_no,
                 "dates": dates,
@@ -59,9 +61,10 @@ class OpeningPatternLogger:
         first = next(s for s in group if s.date == dates[0])
         date_part = first.date_display_ko if len(dates) == 1 else f"{first.date_display_ko} 외 {len(dates) - 1}일"
         weekday = "월화수목금토일"[detected_at.weekday()]
+        theater_tag = f"[{self._theater_name}] " if self._theater_name else ""
         line = (
             f"📖 `{detected_at:%m/%d} ({weekday}) {detected_at:%H:%M}` 감지 — "
-            f"**{movie}** · {date_part} · {len(group)}회차"
+            f"{theater_tag}**{movie}** · {date_part} · {len(group)}회차"
         )
         try:
             discord_webhook.post(self._webhook_url, {"content": line})

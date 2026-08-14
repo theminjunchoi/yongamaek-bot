@@ -15,23 +15,26 @@
 ## 기능
 
 - ⚡ 새 날짜 오픈을 **60초 내 감지** (GitHub Actions 장시간 잡 체이닝, 서버비 0원)
+- 🏙 **여러 극장 동시 감시** — 용산·영등포 등 극장별로 독립 감시 (`routes.json`에 극장 추가만 하면 됨)
 - 🎬 **영화별 채널 알림** — 보고 싶은 영화 채널만 알림을 켜면 구독 끝
-- 📱 알림 탭 한 번에 **영화·날짜가 선택된 CGV 앱 예매 화면**으로 이동
+- 🖼 알림에 **영화 포스터** 첨부 (무인증 CGV CDN)
+- 📱 알림 탭 한 번에 **영화·날짜가 선택된 CGV 앱 예매 화면**으로 이동 (극장별 딥링크)
 - 🎭 서버 입장 시 읽기 전용 `관객` 역할 자동 부여
-- 📖 오픈 감지 이벤트를 `state/openings.jsonl`에 축적 (오픈 요일·시각 패턴 분석용)
+- 📖 오픈 감지 이벤트를 `state/openings.jsonl`에 축적 (극장·요일·시각 패턴 분석용)
 - 🚨 봇 내부 장애·Actions 잡 실패 모두 `#장애_알림`으로 경고
 
 ## 구조
 
 ```
 src/
-├── main.py               # 엔트리포인트 (의존성 조립)
-├── app.py                # 폴링 루프 오케스트레이션
+├── main.py               # 엔트리포인트 (극장별 의존성 조립)
+├── app.py                # MonitorApp(극장 1개) + MonitorCoordinator(다중 극장 스케줄링)
 ├── cgv_http_source.py    # CGV API 클라이언트 (ScheduleSource 구현)
 ├── imax_filter.py        # IMAX 회차 판별
 ├── detector.py           # 영화×날짜 스냅샷 diff로 신규 오픈 감지
+├── routes.py             # 극장·영화 → 채널 웹훅 라우팅 설정
 ├── routing_notifier.py   # 영화별 채널 라우팅 (Notifier 구현)
-├── booking_link.py       # CGV 앱 직행 딥링크 생성
+├── booking_link.py       # CGV 앱 직행 딥링크 생성 (극장별)
 ├── pattern_logger.py     # 오픈 패턴 기록
 └── member_bot.py         # 관객 역할 자동 부여 봇
 ```
