@@ -41,10 +41,34 @@ jobs:
           kill $MEMBER_PID 2>/dev/null || true
 
       - name: 스냅샷·오픈 기록 커밋
+        # 폴링·알림은 이미 끝났다. 여기(상태 저장)가 실패해도 다음 잡이 스냅샷을
+        # 재구축하므로, 이 스텝은 절대 잡을 실패시키지 않는다(항상 exit 0).
+        # 잡 수명(5h20m) 동안 원격이 앞서갔을 수 있으므로(코드 push 등),
+        # 원격 최신으로 reset한 뒤 우리 상태파일만 다시 얹어 push한다(untracked/non-ff 회피).
         if: always()
         run: |
           git config user.name "yongamaek-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase --autostash origin main || true
           git add state/
-          git diff --cached --quiet || { git commit -m "chore: 스냅샷·오픈 기록 갱신" && git push; }
+          if git diff --cached --quiet; then
+            echo "스냅샷 변경 없음"; exit 0
+          fi
+          backup=$(mktemp -d)
+          cp -a state/. "$backup"/ 2>/dev/null || true
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main || { echo "fetch 실패 (재시도 $attempt)"; sleep $((attempt*3)); continue; }
+            git reset --hard origin/main
+            mkdir -p state
+            cp -a "$backup"/. state/ 2>/dev/null || true
+            git add state/
+            if git diff --cached --quiet; then
+              echo "원격이 이미 최신 — 커밋 불필요"; exit 0
+            fi
+            git commit -m "chore: 스냅샷·오픈 기록 갱신"
+            if git push; then
+              echo "스냅샷 커밋·push 성공"; exit 0
+            fi
+            echo "push 경합 — 재시도 $attempt"; sleep $((attempt*3))
+          done
+          echo "스냅샷 커밋 최종 실패 — 다음 잡에서 재구축됨 (잡은 성공 처리)"
+          exit 0
