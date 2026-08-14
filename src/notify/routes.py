@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .models import Screening
+from ..domain.models import Screening
 
 
 @dataclass(frozen=True)

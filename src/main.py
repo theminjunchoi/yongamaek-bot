@@ -7,18 +7,18 @@ import logging
 import sys
 from pathlib import Path
 
-from .app import MonitorApp, MonitorCoordinator
-from .booking_link import BookingLinkBuilder
-from .cgv_http_source import CgvHttpScheduleSource
-from .config import Config
-from .detector import OpeningDetector
-from .discord_notifier import DiscordWebhookNotifier
-from .imax_filter import ImaxFilter
-from .notifier import ConsoleNotifier
-from .pattern_logger import OpeningPatternLogger
-from .routes import RoutesConfig, TheaterRoutes
-from .routing_notifier import RoutingNotifier
-from .snapshot_store import JsonSnapshotStore
+from .domain.config import Config
+from .monitor.app import MonitorApp, MonitorCoordinator
+from .monitor.detector import OpeningDetector
+from .monitor.snapshot_store import JsonSnapshotStore
+from .notify.booking_link import BookingLinkBuilder
+from .notify.discord_notifier import DiscordWebhookNotifier
+from .notify.notifier import ConsoleNotifier
+from .notify.pattern_logger import OpeningPatternLogger
+from .notify.routes import RoutesConfig, TheaterRoutes
+from .notify.routing_notifier import RoutingNotifier
+from .sources.cgv_http_source import CgvHttpScheduleSource
+from .sources.imax_filter import ImaxFilter
 
 
 def _link_builder(theater: TheaterRoutes) -> BookingLinkBuilder:

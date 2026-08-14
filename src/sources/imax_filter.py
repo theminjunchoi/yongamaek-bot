@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .models import Screening
+from ..domain.models import Screening
 
 IMAX_GRADE_CD = "03"  # tcscnsGradCd 실측값 ("아이맥스")
 

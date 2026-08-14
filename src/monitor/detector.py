@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .models import Screening
+from ..domain.models import Screening
 
 
 class OpeningDetector:

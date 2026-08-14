@@ -12,7 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .models import Screening
+from ..domain.models import Screening
 from .schedule_source import ScheduleFetchError, ScheduleSource
 
 API_URL = "https://cgv.co.kr/api/v1/booking/searchMovScnInfo"

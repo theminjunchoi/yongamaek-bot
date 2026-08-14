@@ -6,8 +6,8 @@ import logging
 from collections import defaultdict
 
 from . import discord_webhook
+from ..domain.models import Screening
 from .booking_link import BookingLinkBuilder
-from .models import Screening
 from .notifier import Notifier, NotifyError
 
 logger = logging.getLogger(__name__)

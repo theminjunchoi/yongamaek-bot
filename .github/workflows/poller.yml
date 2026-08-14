@@ -35,7 +35,7 @@ jobs:
           MAX_RUNTIME_SEC: "19200"
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
         run: |
-          python3 -m src.member_bot &
+          python3 -m src.bot.member_bot &
           MEMBER_PID=$!
           python3 -m src.main
           kill $MEMBER_PID 2>/dev/null || true
