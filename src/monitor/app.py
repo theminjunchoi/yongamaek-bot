@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
 NIGHT_START_HOUR = 1
 NIGHT_END_HOUR = 7
+# 사이클이 간격보다 오래 걸려도 최소한 이만큼은 쉬고 다음 사이클에 들어간다.
+MIN_CYCLE_GAP_SEC = 10.0
 
 
 class MonitorApp:
@@ -200,9 +202,17 @@ class MonitorCoordinator:
     실행할 때가 된 극장만 순회 실행한다. (극장 하나의 실패가 다른 극장에 영향 없음)
     """
 
-    def __init__(self, monitors: list, max_runtime_sec: float = 0.0):
+    def __init__(
+        self,
+        monitors: list,
+        max_runtime_sec: float = 0.0,
+        min_cycle_gap_sec: float = MIN_CYCLE_GAP_SEC,
+        tick_sec: float = 15.0,  # 종료시간 체크 응답성을 위한 대기 상한
+    ):
         self._monitors = monitors
         self._max_runtime_sec = max_runtime_sec
+        self._min_cycle_gap_sec = min_cycle_gap_sec
+        self._tick_sec = tick_sec
 
     def run_forever(self) -> None:
         logger.info("감시 시작: 극장 %d곳 (%s)", len(self._monitors),
@@ -216,8 +226,14 @@ class MonitorCoordinator:
             now = time.monotonic()
             for monitor in self._monitors:
                 if now >= next_run[monitor]:
+                    # 다음 실행은 사이클 "시작" 기준으로 잡는다. 종료 기준으로 잡으면
+                    # 주기가 (사이클 소요 + 간격)이 되어, 취소표 감시로 사이클이
+                    # 길어진 만큼 감지가 통째로 늦어진다.
+                    cycle_started = time.monotonic()
                     delay = monitor.step()
-                    next_run[monitor] = time.monotonic() + delay
+                    next_run[monitor] = max(
+                        cycle_started + delay, time.monotonic() + self._min_cycle_gap_sec
+                    )
             # 다음 실행 예정까지 대기하되, 종료시간 체크 응답성을 위해 상한을 둔다.
             sleep_for = min(next_run.values()) - time.monotonic()
-            time.sleep(max(1.0, min(sleep_for, 15.0)))
+            time.sleep(max(min(sleep_for, self._tick_sec), min(1.0, self._tick_sec)))
