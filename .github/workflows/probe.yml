@@ -13,3 +13,5 @@ jobs:
       - run: python3 -m src.main --once | tail -3
       - name: 좌석맵 API(searchIfSeatData) 접근 진단
         run: python3 .github/scripts/probe_seatmap.py
+      - name: 게이트 방식 1분 사이클 소요시간 실측
+        run: python3 .github/scripts/probe_gate_cycle.py
