@@ -16,7 +16,7 @@ class Config:
     # 나오므로(실측: 03시대 4분에 2건) 주간과 같은 60초로 둔다. 되돌리려면 이 값만 올리면 된다.
     night_poll_interval_sec: float = 60.0
     days_ahead: int = 14
-    frontier_ahead: int = 3  # 매 사이클: 마지막 오픈 날짜 이후 며칠을 볼지
+    frontier_ahead: int = 5  # 매 사이클: 마지막 오픈 날짜 이후 며칠을 볼지
     full_sweep_interval_sec: float = 600.0  # 전체 범위 스캔 주기 (열린 날짜의 새 영화 편성 감지용)
     request_delay_min_sec: float = 1.0
     request_delay_max_sec: float = 2.0
