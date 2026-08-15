@@ -27,6 +27,7 @@ from ..domain.cancellation import Cancellation
 from ..domain.seat import SeatZone
 from ..notify.notifier import NotifyError
 from ..sources.seat_source import SeatFetchError, SeatSource
+from .backoff import BackoffPolicy
 from .cancel_detector import CancellationDetector
 from .seat_snapshot_store import JsonSeatSnapshotStore
 
@@ -64,14 +65,20 @@ class CancelWatcher:
         self._alert = alert
         self._theater_name = theater_name
         self._cursor = 0
-        self._consecutive_failures = 0
         self._alerted_failure = False
+        # 좌석맵이 막히기 시작하면 물러선다. 60초 주기로 최대 25건씩 계속 두드리는 것이
+        # 소프트 레이트리밋을 하드 IP 차단으로 키우는 가장 빠른 길이다.
+        self._backoff = BackoffPolicy(base_sec=60.0, factor=2.0, max_sec=1800.0)
+        self._paused_until = 0.0
 
     def observe(self, screenings: list) -> None:
         """한 사이클치 IMAX 회차 목록을 받아 취소표를 감지하고 알린다.
 
         예매 오픈 감지를 방해하면 안 되므로 예외를 밖으로 던지지 않는다.
         """
+        if time.monotonic() < self._paused_until:
+            return
+
         eligible = self._eligible(screenings)
         if not eligible:
             return
@@ -88,6 +95,9 @@ class CancelWatcher:
                 time.sleep(random.uniform(self._delay_min, self._delay_max))
             observed = self._observe_one(screening, state)
             if observed is None:
+                # 조회가 막힌 상태에서 남은 회차까지 계속 두드리지 않는다.
+                if time.monotonic() < self._paused_until:
+                    break
                 continue
             available_labels, cancellation = observed
             updates[screening.screening_key] = {
@@ -191,21 +201,25 @@ class CancelWatcher:
         )
 
     def _record_failure(self, error: SeatFetchError) -> None:
-        self._consecutive_failures += 1
+        """실패하면 다음 조회까지 물러선다. 실패가 이어질수록 대기가 길어진다."""
+        pause = self._backoff.record_failure()
+        self._paused_until = time.monotonic() + pause
+        failures = self._backoff.consecutive_failures
         logger.warning(
-            "좌석맵 조회 실패(연속 %d회): %s", self._consecutive_failures, error
+            "좌석맵 조회 실패(연속 %d회): %s — %.0f초간 좌석맵 조회 중단",
+            failures,
+            error,
+            pause,
         )
-        if (
-            self._consecutive_failures >= self._alert_after_failures
-            and not self._alerted_failure
-            and self._alert is not None
-        ):
+        if failures >= self._alert_after_failures and not self._alerted_failure and self._alert:
             self._alert(
                 f"[{self._theater_name}] {self._zone.label} 취소표 감시 장애: "
-                f"좌석맵 조회 연속 {self._consecutive_failures}회 실패 ({error})"
+                f"좌석맵 조회 연속 {failures}회 실패 ({error}) — "
+                f"{pause / 60:.0f}분간 조회를 멈춥니다"
             )
             self._alerted_failure = True
 
     def _record_success(self) -> None:
-        self._consecutive_failures = 0
+        self._backoff.reset()
+        self._paused_until = 0.0
         self._alerted_failure = False
