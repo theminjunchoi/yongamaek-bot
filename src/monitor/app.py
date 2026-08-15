@@ -16,6 +16,7 @@ from ..notify.pattern_logger import OpeningPatternLogger
 from ..sources.imax_filter import ImaxFilter
 from ..sources.schedule_source import ScheduleFetchError, ScheduleSource
 from .backoff import BackoffPolicy
+from .cancel_watcher import CancelWatcher
 from .detector import OpeningDetector
 from .snapshot_store import JsonSnapshotStore
 
@@ -36,6 +37,7 @@ class MonitorApp:
         notifier: Notifier,
         config: Config,
         pattern_logger: Optional[OpeningPatternLogger] = None,
+        cancel_watcher: Optional[CancelWatcher] = None,
         theater_name: str = "용아맥",
     ):
         self._source = source
@@ -45,6 +47,7 @@ class MonitorApp:
         self._notifier = notifier
         self._config = config
         self._pattern_logger = pattern_logger
+        self._cancel_watcher = cancel_watcher
         self._theater_name = theater_name
         self._backoff = BackoffPolicy()
         self._alerted_failure = False
@@ -103,13 +106,14 @@ class MonitorApp:
             self._store.save({s.key for s in current})
             self._last_full_sweep = time.monotonic()
             logger.info("[%s] 초기 스냅샷 구축: 회차 %d건 (알림 생략)", self._theater_name, len(current))
+            self._watch_cancellations(current)
             return
 
         known = self._store.load()
 
         # 매 사이클은 "마지막 오픈 날짜 이후"만 빠르게 보고(새 날짜 오픈 감지),
         # 주기적으로만 전체 범위를 스캔한다(열린 날짜에 새 영화가 편성되는 경우 감지).
-        full = time.monotonic() - self._last_full_sweep >= self._config.full_sweep_interval_sec
+        full = self._needs_full_sweep()
         dates = self._dates_to_check() if full else self._frontier_dates(known)
         current = self._fetch_imax(dates)
         if full:
@@ -126,6 +130,22 @@ class MonitorApp:
 
         today = datetime.now(KST).strftime("%Y%m%d")
         self._store.save(self._detector.prune_expired(known, today))
+
+        self._watch_cancellations(current)
+
+    def _needs_full_sweep(self) -> bool:
+        """취소표 감시는 매 사이클 전 회차의 잔여석이 필요하므로 항상 풀스캔한다.
+
+        풀스캔이 프런티어 조회를 포함하므로 요청이 따로 늘지는 않는다.
+        """
+        if self._cancel_watcher is not None:
+            return True
+        return time.monotonic() - self._last_full_sweep >= self._config.full_sweep_interval_sec
+
+    def _watch_cancellations(self, screenings: list) -> None:
+        if self._cancel_watcher is None:
+            return
+        self._cancel_watcher.observe(screenings)
 
     def _fetch_imax(self, dates: list) -> list:
         """주어진 날짜들을 조회해 IMAX 회차만 모은다.

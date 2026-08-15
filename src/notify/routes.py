@@ -12,13 +12,15 @@ from pathlib import Path
 from typing import Optional
 
 from ..domain.models import Screening
+from ..domain.seat import YONGSAN_IMAX_HONEY, RowRangeZone, SeatZone
 
 
 @dataclass(frozen=True)
 class MovieRoute:
     name: str  # 표시용 이름 (예: "오디세이")
     keywords: tuple  # 영화명 매칭 키워드 (한/영 별칭 허용)
-    webhook_url: str
+    webhook_url: str  # 신규 날짜 오픈 알림 채널
+    cancel_webhook_url: str = ""  # 명당 취소표 알림 채널. 비우면 이 영화는 취소 감시 안 함
 
     def matches(self, screening: Screening) -> bool:
         text = f"{screening.movie_name} {screening.product_name}".upper()
@@ -33,6 +35,15 @@ class TheaterRoutes:
     site_no: str  # CGV 극장 코드 (예: "0013")
     site_name: str  # 예매 딥링크용 (예: "CGV 용산아이파크몰")
     routes: tuple  # (MovieRoute, ...)
+    honey_zone: Optional[SeatZone] = None  # 취소표를 볼 좌석 구역. 없으면 기본값(용아맥 명당)
+
+    @property
+    def zone(self) -> SeatZone:
+        return self.honey_zone or YONGSAN_IMAX_HONEY
+
+    @property
+    def watches_cancellations(self) -> bool:
+        return any(r.cancel_webhook_url for r in self.routes)
 
     def match(self, screening: Screening) -> Optional[MovieRoute]:
         for route in self.routes:
@@ -58,8 +69,20 @@ class RoutesConfig:
                     name=r["name"],
                     keywords=tuple(r.get("keywords") or [r["name"]]),
                     webhook_url=r["webhook_url"],
+                    cancel_webhook_url=r.get("cancel_webhook_url", ""),
                 )
                 for r in raw
+            )
+
+        def make_zone(raw: Optional[dict]) -> Optional[SeatZone]:
+            """{"rows": "HIJKL", "min_seat_no": 16, "max_seat_no": 29} 형식(선택)."""
+            if not raw:
+                return None
+            return RowRangeZone.of(
+                rows=raw["rows"],
+                min_number=int(raw["min_seat_no"]),
+                max_number=int(raw["max_seat_no"]),
+                label=raw.get("label", "명당"),
             )
 
         if "theaters" in data:
@@ -69,6 +92,7 @@ class RoutesConfig:
                     site_no=t["site_no"],
                     site_name=t.get("site_name", ""),
                     routes=make_routes(t.get("routes", [])),
+                    honey_zone=make_zone(t.get("honey_zone")),
                 )
                 for t in data["theaters"]
             )
@@ -80,6 +104,7 @@ class RoutesConfig:
                     site_no=data.get("site_no", "0013"),
                     site_name=data.get("site_name", "CGV 용산아이파크몰"),
                     routes=make_routes(data.get("routes", [])),
+                    honey_zone=make_zone(data.get("honey_zone")),
                 ),
             )
 

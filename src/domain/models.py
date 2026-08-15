@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+KST = ZoneInfo("Asia/Seoul")
 
 
 @dataclass(frozen=True)
@@ -24,6 +28,7 @@ class Screening:
     total_seats: int
     rating: str
     poster_path: str = ""  # physcFilePathnm, 예: "030001/30001323/30001323_185.jpg"
+    sale_end_time: str = ""  # salEndTm, 판매 종료 시각 HHMM (실측상 항상 상영시작+15분)
 
     @property
     def poster_url(self) -> str:
@@ -43,6 +48,35 @@ class Screening:
         return f"{self.date}|{self.movie_no}"
 
     @property
+    def screening_key(self) -> str:
+        """회차 단위 식별 키. 취소표 감시는 영화×날짜가 아니라 회차 단위다.
+
+        날짜가 앞에 와야 지난 키 정리가 동작한다.
+        """
+        return f"{self.date}|{self.screen_no}|{self.seq}"
+
+    @property
+    def start_datetime(self) -> datetime:
+        """상영 시작 시각(KST). 심야 "2500"(=다음날 01:00) 표기를 풀어준다."""
+        return self._to_datetime(self.start_time)
+
+    @property
+    def sale_end_datetime(self) -> datetime:
+        """예매 마감 시각(KST). 값이 없으면 상영 시작 시각으로 본다."""
+        if not self.sale_end_time:
+            return self.start_datetime
+        return self._to_datetime(self.sale_end_time)
+
+    def is_booking_open(self, now: datetime) -> bool:
+        """지금 이 회차를 아직 예매할 수 있는지."""
+        return now < self.sale_end_datetime
+
+    def _to_datetime(self, hhmm: str) -> datetime:
+        t = hhmm.zfill(4)
+        base = datetime.strptime(self.date, "%Y%m%d").replace(tzinfo=KST)
+        return base + timedelta(hours=int(t[:2]), minutes=int(t[2:]))
+
+    @property
     def start_time_display(self) -> str:
         """"0730" -> "07:30", "2500" -> "25:00" 형태로 표시용 변환."""
         t = self.start_time.zfill(4)
@@ -57,8 +91,6 @@ class Screening:
     @property
     def date_display_ko(self) -> str:
         """"20260826" -> "8월 26일 (수)"."""
-        from datetime import datetime
-
         dt = datetime.strptime(self.date, "%Y%m%d")
         weekday = "월화수목금토일"[dt.weekday()]
         return f"{dt.month}월 {dt.day}일 ({weekday})"
@@ -89,4 +121,5 @@ class Screening:
             total_seats=_int(row.get("stcnt")),
             rating=str(row.get("cratgClsNm", "")),
             poster_path=str(row.get("physcFilePathnm", "") or ""),
+            sale_end_time=str(row.get("salEndTm", "") or ""),
         )

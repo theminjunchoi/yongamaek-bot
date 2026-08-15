@@ -18,6 +18,11 @@ class Config:
     full_sweep_interval_sec: float = 600.0  # 전체 범위 스캔 주기 (열린 날짜의 새 영화 편성 감지용)
     request_delay_min_sec: float = 1.0
     request_delay_max_sec: float = 2.0
+    # 명당 취소표 감시 (대상은 "아직 예매 가능한 회차" = 판매종료 salEndTm 이전)
+    seat_sweep_per_cycle: int = 6  # 롤링 스윕: 매 사이클 좌석맵을 갈아볼 회차 수
+    seat_max_fetch_per_cycle: int = 25  # 사이클당 좌석맵 조회 상한 (1분 주기 보호)
+    seat_request_delay_min_sec: float = 0.3
+    seat_request_delay_max_sec: float = 0.6
     snapshot_path: Path = Path("state/snapshot.json")
     routes_path: Path = Path("routes.json")
     alert_after_failures: int = 5
@@ -37,6 +42,12 @@ class Config:
             snapshot_path=Path(os.environ.get("SNAPSHOT_PATH", cls.snapshot_path)),
             routes_path=Path(os.environ.get("ROUTES_PATH", cls.routes_path)),
             max_runtime_sec=float(os.environ.get("MAX_RUNTIME_SEC", cls.max_runtime_sec)),
+            seat_sweep_per_cycle=int(
+                os.environ.get("SEAT_SWEEP_PER_CYCLE", cls.seat_sweep_per_cycle)
+            ),
+            seat_max_fetch_per_cycle=int(
+                os.environ.get("SEAT_MAX_FETCH_PER_CYCLE", cls.seat_max_fetch_per_cycle)
+            ),
         )
 
 def _load_env_file(path: Path) -> None:

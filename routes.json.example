@@ -4,23 +4,18 @@
       "name": "용산",
       "site_no": "0013",
       "site_name": "CGV 용산아이파크몰",
+      "honey_zone": {
+        "rows": "HIJKL",
+        "min_seat_no": 16,
+        "max_seat_no": 29,
+        "label": "명당"
+      },
       "routes": [
         {
           "name": "오디세이",
           "keywords": ["오디세이", "ODYSSEY"],
-          "webhook_url": "https://discord.com/api/webhooks/... (#오디세이_알림 채널 웹훅)"
-        }
-      ]
-    },
-    {
-      "name": "영등포",
-      "site_no": "0059",
-      "site_name": "CGV 영등포타임스퀘어",
-      "routes": [
-        {
-          "name": "오디세이",
-          "keywords": ["오디세이", "ODYSSEY"],
-          "webhook_url": "https://discord.com/api/webhooks/... (영등포 #오디세이_알림 채널 웹훅)"
+          "webhook_url": "https://discord.com/api/webhooks/... (#오디세이_신규_알림 채널 웹훅)",
+          "cancel_webhook_url": "https://discord.com/api/webhooks/... (#오디세이_취소_알림 채널 웹훅). 비우면 이 영화는 취소표 감시 안 함"
         }
       ]
     }
