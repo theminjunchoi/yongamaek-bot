@@ -11,3 +11,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 -m src.main --once | tail -3
+      - name: 좌석맵 API(searchIfSeatData) 접근 진단
+        run: python3 .github/scripts/probe_seatmap.py
