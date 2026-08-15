@@ -116,7 +116,7 @@ class MonitorApp:
         # 매 사이클은 "마지막 오픈 날짜 이후"만 빠르게 보고(새 날짜 오픈 감지),
         # 주기적으로만 전체 범위를 스캔한다(열린 날짜에 새 영화가 편성되는 경우 감지).
         full = self._needs_full_sweep()
-        dates = self._dates_to_check() if full else self._frontier_dates(known)
+        dates = self._sweep_dates(known) if full else self._frontier_dates(known)
         current = self._fetch_imax(dates)
         if full:
             self._last_full_sweep = time.monotonic()
@@ -172,6 +172,15 @@ class MonitorApp:
         if errors and len(errors) == len(dates):
             raise errors[0]
         return screenings
+
+    def _sweep_dates(self, known_keys: set) -> list[str]:
+        """풀스캔 범위: 14일 창 + 프런티어.
+
+        오픈이 14일 창 끝까지 차오르면 다음 오픈 후보 날짜가 창 밖으로 나간다.
+        (예: 오늘 8/16, 창은 8/29까지인데 8/27까지 열렸다면 다음은 8/30)
+        창만 보면 그 날짜의 오픈을 영영 못 잡으므로 프런티어를 합친다.
+        """
+        return sorted(set(self._dates_to_check()) | set(self._frontier_dates(known_keys)))
 
     def _dates_to_check(self) -> list[str]:
         today = datetime.now(KST).date()
