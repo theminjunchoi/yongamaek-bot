@@ -110,9 +110,9 @@ def _print_seat_status(theater: TheaterRoutes, screenings: list, config: Config)
     detector = CancellationDetector()
     zone = theater.zone
     now = datetime.now(KST)
-    print(f"\n--- {zone.label} 구역 현황 (아직 예매 가능한 회차) ---")
+    print(f"\n--- {zone.label} 구역 현황 (아직 상영 시작 전인 회차) ---")
     for s in sorted(screenings, key=lambda s: (s.date, s.start_time)):
-        if not s.is_booking_open(now):
+        if not s.is_before_start(now):
             continue
         try:
             seats = source.fetch(s.date, s.screen_no, s.seq)

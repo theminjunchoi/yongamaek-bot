@@ -60,16 +60,13 @@ class Screening:
         """상영 시작 시각(KST). 심야 "2500"(=다음날 01:00) 표기를 풀어준다."""
         return self._to_datetime(self.start_time)
 
-    @property
-    def sale_end_datetime(self) -> datetime:
-        """예매 마감 시각(KST). 값이 없으면 상영 시작 시각으로 본다."""
-        if not self.sale_end_time:
-            return self.start_datetime
-        return self._to_datetime(self.sale_end_time)
+    def is_before_start(self, now: datetime) -> bool:
+        """아직 상영이 시작되지 않았는지.
 
-    def is_booking_open(self, now: datetime) -> bool:
-        """지금 이 회차를 아직 예매할 수 있는지."""
-        return now < self.sale_end_datetime
+        CGV는 상영 시작 후 15분(salEndTm)까지 판매를 열어두지만, 시작한 영화의
+        자리는 알려도 의미가 없어서 시작 시각을 기준으로 자른다.
+        """
+        return now < self.start_datetime
 
     def _to_datetime(self, hhmm: str) -> datetime:
         t = hhmm.zfill(4)

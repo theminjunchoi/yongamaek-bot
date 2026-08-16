@@ -127,17 +127,17 @@ class CancelWatcher:
         self._store.save(self._store.prune_expired(state, today))
 
     def _eligible(self, screenings: list) -> list:
-        """아직 예매할 수 있는 회차만 감시한다.
+        """아직 상영이 시작되지 않은 회차만 감시한다.
 
-        기준은 판매 종료 시각(salEndTm)이다. 실측상 항상 상영시작+15분이라
-        상영이 막 시작된 회차도 15분간은 예매가 열려 있고, 그 사이의 취소표는
-        여전히 잡을 수 있는 자리다. 반대로 판매가 끝난 회차는 알려봐야 소용없다.
+        CGV는 상영 시작 후 15분까지 판매를 열어두지만, 이미 시작한 영화의 자리를
+        알려봐야 쓸모가 없다. 실제로 상영 직전에 극장이 보류석을 풀면서 알림이
+        나가는 일이 있었다(2026-08-16 11:00 회차 K16~K17).
         """
         now = datetime.now(KST)
         eligible = {}
         for s in screenings:
             # 같은 회차가 중복으로 들어오면 두 번 알릴 수 있으므로 키로 접는다.
-            if s.is_booking_open(now):
+            if s.is_before_start(now):
                 eligible.setdefault(s.screening_key, s)
         return list(eligible.values())
 
