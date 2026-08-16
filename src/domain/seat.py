@@ -5,7 +5,7 @@
 
 - seatStusCd "01" (판매)  = 이미 팔린 좌석
 - seatStusCd "00" (미정)  + seatSaleYn "Y" = 예매 가능  ← 잔여석
-- seatStusCd "00" (미정)  + seatSaleYn "N" = 상시 차단석 (용아맥 K16~K19)
+- seatStusCd "00" (미정)  + seatSaleYn "N" = 아직 안 푼 보류석 (극장이 잡아둔 상태)
 - seatStusCd "04" (진행)  = 결제 진행 중 임시 점유
 
 따라서 "예매 가능"의 유일한 판별 기준은 seatSaleYn == "Y" 이다.
@@ -89,7 +89,8 @@ class RowRangeZone(SeatZone):
 
 
 # 용아맥(용산 IMAX관, 624석) 명당: H~L열 16~29번 = 70석.
-# 이 중 K16~K19 4석은 상시 차단석이라 실제 감시 대상은 66석이다.
+# K16~K19는 한동안 00/N으로만 보여 "상시 차단석"으로 오판했으나, 회차에 따라
+# 판매(01)되기도 하고 상영 직전에 풀리기도 한다. 70석 전부가 감시 대상이다.
 YONGSAN_IMAX_HONEY = RowRangeZone.of("HIJKL", 16, 29)
 
 

@@ -72,7 +72,8 @@ class DiscordCancellationNotifier(CancellationNotifier):
                 {"name": f"💺 {cancellation.zone_label} 좌석", "value": seat_value, "inline": True},
                 {"name": "⏳ 예매 마감", "value": self._sale_end_display(s), "inline": True},
                 {"name": "🎫 회차 잔여", "value": f"{s.remaining_seats}석", "inline": True},
-                {"name": "​", "value": f"### 👉 [CGV 앱에서 바로 예매하기]({link})"},
+                # 필드 값에서는 헤더 마크다운(###)이 렌더링되지 않는다. 굵게만 먹는다.
+                {"name": "​", "value": f"**👉 [CGV 앱에서 바로 예매하기]({link})**"},
             ],
             "footer": {"text": "취소표는 몇 초 만에 사라질 수 있습니다"},
         }
