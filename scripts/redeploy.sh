@@ -46,21 +46,22 @@ echo "새 잡 시작: $run_id (${local_sha:0:7})"
 echo "폴링이 살아있는지 ${WAIT_ALIVE}초간 확인..."
 sleep "$WAIT_ALIVE"
 
+# conclusion이 빈 문자열이면 탭이 연달아 붙어 read가 필드를 밀어버린다(탭은 IFS 공백류).
+# 진행 중 스텝이 바로 그 경우라, 비었으면 "-"로 채운다.
 steps=$(gh run view "$run_id" --json jobs \
-  --jq '.jobs[].steps[] | "\(.status)\t\(.conclusion)\t\(.name)"')
+  --jq '.jobs[].steps[] | "\(.status)\t\(if .conclusion == "" then "-" else .conclusion end)\t\(.name)"')
 if [ -z "$steps" ]; then
   echo "❌ 스텝 상태를 읽지 못했습니다."
   exit 1
 fi
 
-fail=0
-echo "$steps" | while IFS=$'\t' read -r status conclusion name; do
+echo "$steps" | while IFS=$'\t' read -r step_status conclusion name; do
   case "$name" in
     "폴링 + 멤버 봇 실행"*)
-      if [ "$status" = "in_progress" ]; then
+      if [ "$step_status" = "in_progress" ]; then
         echo "  ✅ $name — 실행 중 (프로세스 살아있음)"
       else
-        echo "  ❌ $name — status=$status conclusion=$conclusion (즉시 종료됨)"
+        echo "  ❌ $name — status=$step_status conclusion=$conclusion (즉시 종료됨)"
       fi
       ;;
     "Set up job"|"Run actions/checkout@v4"|"routes.json 생성"*|"의존성 설치"*)
@@ -74,8 +75,8 @@ echo "$steps" | while IFS=$'\t' read -r status conclusion name; do
 done
 
 # 파이프 서브셸 때문에 위 루프의 결과를 다시 판정한다
-alive=$(echo "$steps" | grep -c $'^in_progress\t\t폴링')
-setup_fail=$(echo "$steps" | grep -E $'^completed\t(failure|cancelled)' | grep -cv '폴링')
+alive=$(echo "$steps" | grep -c $'^in_progress\t-\t폴링')
+setup_fail=$(echo "$steps" | grep -E $'^completed\t(failure|cancelled)\t' | grep -cv '폴링')
 if [ "$alive" -eq 1 ] && [ "$setup_fail" -eq 0 ]; then
   echo "✅ 배포 정상 — https://github.com/theminjunchoi/yongamaek-bot/actions/runs/$run_id"
   exit 0
