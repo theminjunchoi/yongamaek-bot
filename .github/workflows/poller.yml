@@ -20,7 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 340
     steps:
+      # ref를 명시하지 않으면 "큐잉 시점"의 커밋을 체크아웃한다. 상태 파일은 잡이
+      # 끝날 때 커밋되므로, 다음 잡은 큐잉된 뒤에 push된 직전 잡의 상태를 통째로
+      # 놓치고 예전 스냅샷으로 시작한다. 그러면 이미 알린 오픈을 다시 알린다.
+      # (2026-08-19 실측: 20:17 교체에서 8/26~8/30 오픈 알림이 재발송됨)
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: routes.json 생성 (Secrets)
         env:
