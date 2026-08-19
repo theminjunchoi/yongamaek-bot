@@ -1,3 +1,1 @@
-{"detected_at": "2026-08-19T17:01:49+09:00", "weekday": "수", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260826"], "screening_count": 6}
-{"detected_at": "2026-08-19T17:04:46+09:00", "weekday": "수", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260827", "20260828"], "screening_count": 10}
-{"detected_at": "2026-08-19T17:08:17+09:00", "weekday": "수", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260829", "20260830"], "screening_count": 12}
+{"detected_at": "2026-08-19T20:17:48+09:00", "weekday": "수", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260826", "20260827", "20260828", "20260829", "20260830"], "screening_count": 28}
