@@ -10,3 +10,5 @@
 {"detected_at": "2026-09-10T11:30:35+09:00", "weekday": "목", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260916"], "screening_count": 6}
 {"detected_at": "2026-09-10T11:31:37+09:00", "weekday": "목", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260917", "20260918", "20260919"], "screening_count": 18}
 {"detected_at": "2026-09-10T11:34:56+09:00", "weekday": "목", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260920"], "screening_count": 4}
+{"detected_at": "2026-09-17T17:01:53+09:00", "weekday": "목", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260921"], "screening_count": 6}
+{"detected_at": "2026-09-17T17:02:55+09:00", "weekday": "목", "theater": "용산", "movie": "오디세이", "movie_no": "30001323", "dates": ["20260922"], "screening_count": 6}
