@@ -20,9 +20,10 @@ import urllib.parse
 import urllib.request
 
 from ..domain.seat import Seat
+from .cgv_endpoint import api_url, relay_headers
 from .seat_source import SeatFetchError, SeatSource
 
-API_URL = "https://cgv.co.kr/api/v1/booking/searchIfSeatData"
+API_PATH = "/api/v1/booking/searchIfSeatData"
 REFERER = "https://cgv.co.kr/cnm/bookMovie/chooseSeatMyself"
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -45,6 +46,7 @@ class CgvHttpSeatSource(SeatSource):
                 "User-Agent": USER_AGENT,
                 "Referer": REFERER,
                 "Accept": "application/json",
+                **relay_headers(),
                 "Accept-Encoding": "gzip",
             },
         )
@@ -71,7 +73,7 @@ class CgvHttpSeatSource(SeatSource):
                 "scnSseq": seq,
             }
         )
-        return f"{API_URL}?{query}"
+        return f"{api_url(API_PATH)}?{query}"
 
     def _parse(self, body: str, date: str, seq: str) -> list[Seat]:
         try:

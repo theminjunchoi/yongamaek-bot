@@ -5,13 +5,16 @@ CGV WAF는 IP 대역별로 다르게 반응하므로 러너에서 별도 확인�
 """
 
 import datetime
+import os
 import gzip
 import json
 import time
 import urllib.parse
 import urllib.request
 
-BASE = "https://cgv.co.kr/api/v1/booking/"
+# CGV_RELAY_URL이 있으면 Cloudflare Worker 중계로 호출한다 (src/sources/cgv_endpoint.py 참고)
+BASE = (os.environ.get("CGV_RELAY_URL", "").rstrip("/") or "https://cgv.co.kr") + "/api/v1/booking/"
+RELAY_HEADERS = {"X-Relay-Token": os.environ["CGV_RELAY_TOKEN"]} if os.environ.get("CGV_RELAY_URL") else {}
 UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
@@ -30,6 +33,7 @@ def get(endpoint: str, params: dict, referer: str):
             "Referer": referer,
             "Accept": "application/json",
             "Accept-Encoding": "gzip",
+            **RELAY_HEADERS,
         },
     )
     started = time.time()

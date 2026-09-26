@@ -8,6 +8,10 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # CGV가 러너 IP를 막아 Worker 중계로 조회한다 (src/sources/cgv_endpoint.py)
+    env:
+      CGV_RELAY_URL: https://cgv-relay.yongamaek.workers.dev
+      CGV_RELAY_TOKEN: ${{ secrets.CGV_RELAY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - run: python3 -m src.main --once | tail -3

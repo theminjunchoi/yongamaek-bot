@@ -7,26 +7,37 @@ on:
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
+    inputs:
+      reset_state:
+        description: "상태 캐시를 버리고 알림 없이 기준선부터 다시 잡기 (중단 후 재개 시)"
+        type: boolean
+        default: false
 
 concurrency:
   group: poller
   cancel-in-progress: false
 
+# 상태는 저장소에 커밋하지 않고 Actions 캐시로 잡 사이에 넘긴다 (쓰기 권한 불필요).
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   poll:
     runs-on: ubuntu-latest
     timeout-minutes: 340
     steps:
-      # ref를 명시하지 않으면 "큐잉 시점"의 커밋을 체크아웃한다. 상태 파일은 잡이
-      # 끝날 때 커밋되므로, 다음 잡은 큐잉된 뒤에 push된 직전 잡의 상태를 통째로
-      # 놓치고 예전 스냅샷으로 시작한다. 그러면 이미 알린 오픈을 다시 알린다.
-      # (2026-08-19 실측: 20:17 교체에서 8/26~8/30 오픈 알림이 재발송됨)
       - uses: actions/checkout@v4
+
+      # 상태(스냅샷·좌석 기준선·오픈 기록)는 캐시로 이어받는다. 캐시 키는 불변이라
+      # 잡마다 새 키로 저장하고, 복원은 접두사로 가장 최근 것을 고른다.
+      # 캐시가 없으면(첫 실행·7일 미사용 만료·reset_state) 봇이 알림 없이 기준선만 잡는다.
+      - name: 상태 복원
+        if: ${{ !inputs.reset_state }}
+        uses: actions/cache/restore@v4
         with:
-          ref: main
+          path: state
+          key: state-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: state-
 
       - name: routes.json 생성 (Secrets)
         env:
@@ -39,6 +50,8 @@ jobs:
       - name: 폴링 + 멤버 봇 실행 (5시간 20분)
         env:
           MAX_RUNTIME_SEC: "19200"
+          CGV_RELAY_URL: https://cgv-relay.yongamaek.workers.dev
+          CGV_RELAY_TOKEN: ${{ secrets.CGV_RELAY_TOKEN }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
         run: |
           python3 -m src.bot.member_bot &
@@ -46,35 +59,10 @@ jobs:
           python3 -m src.main
           kill $MEMBER_PID 2>/dev/null || true
 
-      - name: 스냅샷·오픈 기록 커밋
-        # 폴링·알림은 이미 끝났다. 여기(상태 저장)가 실패해도 다음 잡이 스냅샷을
-        # 재구축하므로, 이 스텝은 절대 잡을 실패시키지 않는다(항상 exit 0).
-        # 잡 수명(5h20m) 동안 원격이 앞서갔을 수 있으므로(코드 push 등),
-        # 원격 최신으로 reset한 뒤 우리 상태파일만 다시 얹어 push한다(untracked/non-ff 회피).
+      # 잡이 실패·취소돼도 그때까지의 상태는 남긴다 (상태 파일은 매 사이클 원자적으로 저장됨).
+      - name: 상태 저장
         if: always()
-        run: |
-          git config user.name "yongamaek-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state/
-          if git diff --cached --quiet; then
-            echo "스냅샷 변경 없음"; exit 0
-          fi
-          backup=$(mktemp -d)
-          cp -a state/. "$backup"/ 2>/dev/null || true
-          for attempt in 1 2 3 4 5; do
-            git fetch origin main || { echo "fetch 실패 (재시도 $attempt)"; sleep $((attempt*3)); continue; }
-            git reset --hard origin/main
-            mkdir -p state
-            cp -a "$backup"/. state/ 2>/dev/null || true
-            git add state/
-            if git diff --cached --quiet; then
-              echo "원격이 이미 최신 — 커밋 불필요"; exit 0
-            fi
-            git commit -m "chore: 스냅샷·오픈 기록 갱신"
-            if git push; then
-              echo "스냅샷 커밋·push 성공"; exit 0
-            fi
-            echo "push 경합 — 재시도 $attempt"; sleep $((attempt*3))
-          done
-          echo "스냅샷 커밋 최종 실패 — 다음 잡에서 재구축됨 (잡은 성공 처리)"
-          exit 0
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: state-${{ github.run_id }}-${{ github.run_attempt }}

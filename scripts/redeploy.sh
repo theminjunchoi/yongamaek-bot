@@ -4,6 +4,9 @@
 # 잡은 5시간 20분짜리라 코드를 push해도 저절로 반영되지 않는다. 돌던 잡을
 # 취소하고 새로 띄워야 하는데(취소는 watchdog 경고를 울리지 않는다), 새 잡이
 # 시작만 하고 곧바로 죽어도 겉보기엔 in_progress로 보이므로 스텝 상태까지 본다.
+#
+# 인자는 gh workflow run에 그대로 넘긴다. 중단 후 재개할 때는 묵은 상태로 알림이
+# 몰려 나가지 않게 기준선부터 다시 잡는다: ./scripts/redeploy.sh -f reset_state=true
 set -uo pipefail
 
 WAIT_START=${WAIT_START:-60}   # 새 잡이 뜨기를 기다리는 시간(초)
@@ -22,7 +25,7 @@ echo "배포 대상 커밋: ${local_sha:0:7} $(git log -1 --pretty=%s)"
 old_runs=$(gh run list --workflow=poller --limit 10 --json databaseId,status \
   --jq '.[] | select(.status=="in_progress") | .databaseId')
 
-gh workflow run poller || exit 1
+gh workflow run poller "$@" || exit 1
 echo "새 잡 요청 완료, 기존 잡 취소 중..."
 sleep 8
 for id in $old_runs; do

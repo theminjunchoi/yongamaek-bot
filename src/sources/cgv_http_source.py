@@ -13,9 +13,10 @@ import urllib.parse
 import urllib.request
 
 from ..domain.models import Screening
+from .cgv_endpoint import api_url, relay_headers
 from .schedule_source import ScheduleFetchError, ScheduleSource
 
-API_URL = "https://cgv.co.kr/api/v1/booking/searchMovScnInfo"
+API_PATH = "/api/v1/booking/searchMovScnInfo"
 REFERER = "https://cgv.co.kr/cnm/movieBook/cinema"
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -39,6 +40,7 @@ class CgvHttpScheduleSource(ScheduleSource):
                 "User-Agent": USER_AGENT,
                 "Referer": REFERER,
                 "Accept": "application/json",
+                **relay_headers(),
             },
         )
         try:
@@ -60,7 +62,7 @@ class CgvHttpScheduleSource(ScheduleSource):
                 "rtctlScopCd": self._rtctl_scop_cd,
             }
         )
-        return f"{API_URL}?{query}"
+        return f"{api_url(API_PATH)}?{query}"
 
     def _parse(self, body: str, date: str) -> list[Screening]:
         try:
