@@ -25,12 +25,10 @@ class DiscordCancellationNotifier(CancellationNotifier):
         self,
         webhook_url: str,
         link_builder: BookingLinkBuilder,
-        mention: str = "@here",
         timeout_sec: float = 10.0,
     ):
         self._webhook_url = webhook_url
         self._links = link_builder
-        self._mention = mention
         self._timeout_sec = timeout_sec
 
     def notify_cancellations(self, cancellations: list) -> None:
@@ -49,7 +47,7 @@ class DiscordCancellationNotifier(CancellationNotifier):
     def _build_content(self, cancellations: list) -> str:
         """푸시 미리보기 한 줄. 영화와 좌석이 알림창에서 바로 보여야 한다."""
         first = cancellations[0]
-        head = f"{self._mention}\n## 🎟️ {first.screening.movie_name} {first.zone_label} 취소표"
+        head = f"## 🎟️ {first.screening.movie_name} {first.zone_label} 취소표"
         if len(cancellations) == 1:
             return f"{head} — {first.seat_headline}"
         return f"{head} — {len(cancellations)}개 회차"

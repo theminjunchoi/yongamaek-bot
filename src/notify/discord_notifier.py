@@ -21,12 +21,10 @@ class DiscordWebhookNotifier(Notifier):
         self,
         webhook_url: str,
         link_builder: BookingLinkBuilder,
-        mention: str = "@here",
         timeout_sec: float = 10.0,
     ):
         self._webhook_url = webhook_url
         self._links = link_builder
-        self._mention = mention
         self._timeout_sec = timeout_sec
 
     def notify_openings(self, screenings: list[Screening]) -> None:
@@ -42,7 +40,7 @@ class DiscordWebhookNotifier(Notifier):
         dates = sorted({s.date for s in screenings})
         date_ko = next(s for s in screenings if s.date == dates[0]).date_display_ko
         date_part = date_ko if len(dates) == 1 else f"{date_ko} 외 {len(dates) - 1}일"
-        return f"{self._mention}\n## 🎬 {', '.join(movies)} 용아맥 예매 오픈! — {date_part}"
+        return f"## 🎬 {', '.join(movies)} 용아맥 예매 오픈! — {date_part}"
 
     def alert(self, message: str) -> None:
         try:
